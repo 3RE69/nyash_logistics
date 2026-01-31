@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROUTEXA | Select Service</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: #0b0f14;
+            color: #f1f5f9;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border-color: #22d3ee;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center p-8 relative">
+
+    <div class="absolute top-8 left-8 text-2xl font-bold text-cyan-400 tracking-tighter">ROUTEXA</div>
+
+    <h2 class="text-3xl font-bold mb-12 text-center">Select Your Workspace</h2>
+
+    <div class="grid md:grid-cols-2 gap-8 max-w-4xl w-full">
+
+        <!-- Driver Card -->
+        <a href="/driver?id=T1"
+            class="group block p-8 rounded-2xl bg-[#121821] border border-gray-800 transition-all duration-300 card-hover cursor-pointer">
+            <div
+                class="w-16 h-16 bg-cyan-900/30 rounded-xl flex items-center justify-center mb-6 group-hover:bg-cyan-500/20 transition">
+                <span class="text-3xl">🚚</span>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-3">Driver Console</h3>
+            <p class="text-gray-400 leading-relaxed">
+                Connect to your assigned vehicle. View real-time navigation, efficient routing updates, and cargo status
+                for a single truck.
+            </p>
+            <div class="mt-6 flex items-center text-cyan-400 font-semibold group-hover:translate-x-2 transition">
+                Enter Console <span class="ml-2">→</span>
+            </div>
+        </a>
+
+        <!-- Manager Card -->
+        <a href="/manager"
+            class="group block p-8 rounded-2xl bg-[#121821] border border-gray-800 transition-all duration-300 card-hover cursor-pointer">
+            <div
+                class="w-16 h-16 bg-purple-900/30 rounded-xl flex items-center justify-center mb-6 group-hover:bg-purple-500/20 transition">
+                <span class="text-3xl">🏢</span>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-3">Fleet Manager</h3>
+            <p class="text-gray-400 leading-relaxed">
+                Oversee the entire operation. Monitor multiple vehicles, global route optimization, and handle
+                fleet-wide disruptions.
+            </p>
+            <div class="mt-6 flex items-center text-purple-400 font-semibold group-hover:translate-x-2 transition">
+                Open Dashboard <span class="ml-2">→</span>
+            </div>
+        </a>
+
+    </div>
+
+</body>
+
+</html>

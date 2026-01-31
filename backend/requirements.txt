@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic
+langchain
+langchain-groq
+requests
+ortools
+networkx
+python-dotenv
+websockets
+jinja2

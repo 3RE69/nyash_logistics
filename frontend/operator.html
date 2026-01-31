@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>ROUTEXA | Fleet Operations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121821;
+      --card: #151c27;
+      --accent: #2dd4bf;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Inter", system-ui, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    aside {
+      width: 240px;
+      background: #0f1520;
+      padding: 20px;
+      border-right: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 30px;
+    }
+
+    nav a {
+      display: block;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 8px;
+    }
+
+    nav a.active,
+    nav a:hover {
+      background: rgba(45, 212, 191, 0.1);
+      color: var(--accent);
+    }
+
+    /* Main */
+    main {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 22px;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      padding: 18px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(45, 212, 191, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 20px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    /* Content */
+    .content {
+      display: grid;
+      grid-template-columns: 2.2fr 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 16px;
+    }
+
+    .panel h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    /* Map */
+    #map {
+      height: 420px;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    /* Alerts */
+    .alert {
+      background: #111827;
+      border-left: 4px solid var(--accent);
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+
+    .alert-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .alert-desc {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    #map {
+      filter: brightness(1.05) contrast(1.2) saturate(1.1);
+      border-radius: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <aside>
+    <div class="logo">ROUTEXA</div>
+    <nav>
+      <a href="/manager" class="active">Dashboard</a>
+      <a href="/manager/fleet">Fleet</a>
+      <a href="/manager/loads">Loads</a>
+      <a href="#" style="opacity: 0.5; cursor: default;">Live Map</a> <!-- Already on dashboard -->
+      <a href="/manager/analytics">Analytics</a>
+      <a href="/manager/alerts">Alerts</a>
+    </nav>
+  </aside>
+
+  <main>
+
+    <header>
+      <h1>Fleet Operations</h1>
+      <button class="btn">AI Optimize</button>
+    </header>
+
+    <!-- Stats -->
+    <section class="stats">
+      <div class="stat-card">
+        <div class="stat-icon">🚚</div>
+        <div>
+          <div class="stat-label">Active Vehicles</div>
+          <div class="stat-value" id="activeVehicles"></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div>
+          <div class="stat-label">Revenue</div>
+          <div class="stat-value" id="revenue"></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div>
+          <div class="stat-label">Utilization</div>
+          <div class="stat-value" id="utilization"></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div>
+          <div class="stat-label">Pending Loads</div>
+          <div class="stat-value" id="pendingLoads"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Map + Alerts -->
+    <section class="content">
+
+      <div class="panel">
+        <h2>Live Fleet Map</h2>
+        <div id="map"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Smart Alerts</h2>
+
+        <!-- Backend injects alerts here -->
+        <div id="alerts"></div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // Initialize Dark Map
+    const map = L.map("map", { zoomControl: false }).setView([18.5204, 73.8567], 10);
+
+    L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png", {
+      maxZoom: 20,
+      attribution: "© OpenStreetMap © Stadia Maps"
+    }).addTo(map);
+
+    const markers = {};
+
+    async function updateFleet() {
+      try {
+        const res = await fetch('/api/state');
+        const data = await res.json();
+
+        // Update Stats
+        document.getElementById('activeVehicles').innerText = data.trucks.length;
+        document.getElementById('revenue').innerText = "$12.4k"; // Mock
+        document.getElementById('utilization').innerText = "85%"; // Mock
+        document.getElementById('pendingLoads').innerText = "4"; // Mock
+
+        // Update Map
+        data.trucks.forEach(truck => {
+          if (markers[truck.truck_id]) {
+            markers[truck.truck_id].setLatLng([truck.location.lat, truck.location.lng]);
+            markers[truck.truck_id].setPopupContent(`<b>${truck.truck_id}</b><br>${truck.status}`);
+          } else {
+            const marker = L.circleMarker([truck.location.lat, truck.location.lng], {
+              radius: 8,
+              fillColor: "#2dd4bf",
+              color: "#fff",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.8
+            }).addTo(map).bindPopup(`<b>${truck.truck_id}</b>`);
+            markers[truck.truck_id] = marker;
+          }
+        });
+
+      } catch (e) { console.error(e); }
+    }
+
+    setInterval(updateFleet, 1000);
+    updateFleet();
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ROUTEXA | Fleet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Reuse CSS from operator.html for consistency */
+        :root {
+            --bg: #0b0f14;
+            --panel: #121821;
+            --card: #151c27;
+            --accent: #2dd4bf;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: "Inter", system-ui, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+        }
+
+        aside {
+            width: 240px;
+            background: #0f1520;
+            padding: 20px;
+            border-right: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 30px;
+        }
+
+        nav a {
+            display: block;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            color: var(--muted);
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        nav a:hover,
+        nav a.active {
+            background: rgba(45, 212, 191, 0.1);
+            color: var(--accent);
+        }
+
+        main {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin: 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            color: var(--muted);
+            font-weight: 500;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.en_route {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+        }
+
+        .badge.idle {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+    </style>
+</head>
+
+<body>
+    <aside>
+        <div class="logo">ROUTEXA</div>
+        <nav>
+            <a href="/manager">Dashboard</a>
+            <a href="/manager/fleet" class="active">Fleet</a>
+            <a href="/manager/loads">Loads</a>
+            <a href="/manager/analytics">Analytics</a>
+            <a href="/manager/alerts">Alerts</a>
+        </nav>
+    </aside>
+    <main>
+        <header>
+            <h1>Fleet Management</h1>
+        </header>
+        <div style="background: var(--panel); border-radius: 16px; border: 1px solid var(--border); overflow: hidden;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Truck ID</th>
+                        <th>Status</th>
+                        <th>Location (Lat/Lng)</th>
+                        <th>Fuel</th>
+                        <th>Current Route</th>
+                    </tr>
+                </thead>
+                <tbody id="fleetTableBody">
+                    <!-- Injected by JS -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+    <script>
+        async function loadFleet() {
+            const res = await fetch('/api/state');
+            const data = await res.json();
+            const tbody = document.getElementById('fleetTableBody');
+            tbody.innerHTML = data.trucks.map(t => `
+                <tr>
+                    <td class="font-bold text-white">${t.truck_id}</td>
+                    <td><span class="badge ${t.status.toLowerCase()}">${t.status}</span></td>
+                    <td style="font-family: monospace; color: var(--muted)">${t.location.lat.toFixed(4)}, ${t.location.lng.toFixed(4)}</td>
+                    <td>
+                        <div style="width: 80px; height: 6px; background: #333; border-radius: 3px; overflow: hidden;">
+                            <div style="width: ${t.fuel_percent}%; height: 100%; background: ${t.fuel_percent > 20 ? '#34d399' : '#ef4444'};"></div>
+                        </div>
+                    </td>
+                    <td>${t.current_node} → ${t.route_nodes[0] || 'End'}</td>
+                </tr>
+            `).join('');
+        }
+        setInterval(loadFleet, 1000);
+        loadFleet();
+    </script>
+</body>
+
+</html>

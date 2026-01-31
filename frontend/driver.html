@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>ROUTEXA | Agentic Logistics — Driver Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --bg: #0a0e12;
+      --panel: rgba(18, 24, 35, 0.9);
+      --card: rgba(21, 28, 39, 0.95);
+      --accent: #22d3ee;
+      --accent-glow: rgba(34, 211, 238, 0.4);
+      --success: #34d399;
+      --warning: #fbbf24;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.06);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ─── Top bar (minimal) ─── */
+    header {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(10, 14, 18, 0.95);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: -0.3px;
+    }
+
+    .status-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(34, 211, 238, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-badge.rerouting {
+      background: rgba(251, 191, 36, 0.15);
+      color: var(--warning);
+      border-color: rgba(251, 191, 36, 0.3);
+    }
+
+    /* ─── Trip info panel ─── */
+    .trip-panel {
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .trip-item label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .trip-item>div {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    /* ─── Map container (large, navigation focus) ─── */
+    .map-container {
+      flex: 1;
+      min-height: 0;
+      padding: 16px;
+    }
+
+    .map-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      height: 100%;
+      box-shadow: var(--shadow);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      min-height: 320px;
+    }
+
+    /* Leaflet overrides */
+    .leaflet-container {
+      background: #0f1419 !important;
+      font-family: inherit;
+    }
+
+    .leaflet-control-zoom {
+      border: 1px solid var(--border) !important;
+      box-shadow: var(--shadow) !important;
+    }
+
+    .leaflet-control-zoom a {
+      background: var(--card) !important;
+      color: var(--text) !important;
+      border: none !important;
+    }
+
+    .leaflet-control-zoom a:hover {
+      background: rgba(34, 211, 238, 0.2) !important;
+    }
+
+    /* Leaflet tooltip dark theme */
+    .leaflet-tooltip {
+      background: rgba(21, 28, 39, 0.95) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--text) !important;
+      font-size: 12px !important;
+      padding: 6px 10px !important;
+      border-radius: 8px !important;
+    }
+
+    /* Truck marker for driver */
+    .driver-truck-marker {
+      background: var(--accent);
+      color: #000;
+      font-size: 28px;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #0a0e12;
+      box-shadow: 0 0 24px var(--accent-glow);
+      font-weight: 700;
+      animation: truckPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes truckPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 24px var(--accent-glow);
+      }
+
+      50% {
+        box-shadow: 0 0 32px var(--accent-glow), 0 0 48px rgba(34, 211, 238, 0.3);
+      }
+    }
+
+    .dest-marker {
+      background: #1e293b;
+      color: #fbbf24;
+      font-size: 22px;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(251, 191, 36, 0.5);
+      box-shadow: 0 0 16px rgba(251, 191, 36, 0.3);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>ROUTEXA — Driver</h1>
+    <div id="driverStatus" class="status-badge">EN_ROUTE</div>
+  </header>
+
+  <section class="trip-panel">
+    <div class="trip-item">
+      <label>Truck ID</label>
+      <div id="truckId">TRK-01</div>
+    </div>
+    <div class="trip-item">
+      <label>Destination</label>
+      <div id="destination">Ranjangaon MIDC</div>
+    </div>
+    <div class="trip-item">
+      <label>Fuel Level</label>
+      <div id="fuelLevel">78%</div>
+    </div>
+    <div class="trip-item">
+      <label>ETA</label>
+      <div id="eta">42 min</div>
+    </div>
+  </section>
+
+  <div class="map-container">
+    <div class="map-card">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    /**
+     * ROUTEXA — Driver Dashboard
+     * Fetches live state from /api/state and filters for the specific truck.
+     */
+
+    // Get Truck ID from URL param (default T1)
+    const urlParams = new URLSearchParams(window.location.search);
+    const MY_TRUCK_ID = urlParams.get('id') || 'T1';
+    document.getElementById('truckId').innerText = MY_TRUCK_ID;
+
+    // Map Init
+    const map = L.map("map", { zoomControl: false }).setView([18.5204, 73.8567], 11);
+    L.control.zoom({ position: "topright" }).addTo(map);
+
+    L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png", {
+      maxZoom: 20,
+      attribution: "© OpenStreetMap © Stadia Maps"
+    }).addTo(map);
+
+    let myMarker = null;
+
+    async function updateDashboard() {
+      try {
+        const res = await fetch('/api/state');
+        const data = await res.json();
+
+        const myTruck = data.trucks.find(t => t.truck_id === MY_TRUCK_ID);
+
+        if (!myTruck) {
+          console.log("Truck not found in simulation");
+          return;
+        }
+
+        // Update Info Panel
+        document.getElementById('driverStatus').innerText = myTruck.status;
+        document.getElementById('driverStatus').className = `status-badge ${myTruck.status === 'REROUTING' ? 'rerouting' : ''}`;
+        document.getElementById('fuelLevel').innerText = myTruck.fuel_percent + '%';
+        document.getElementById('destination').innerText = myTruck.route_nodes[0] || 'DEPOT';
+        // document.getElementById('eta').innerText = myTruck.eta_minutes + ' min'; // Not yet in simple sim
+
+        // Update Map Marker
+        const newLatLng = [myTruck.location.lat, myTruck.location.lng];
+
+        if (!myMarker) {
+          // Create Marker
+          const truckIcon = L.divIcon({
+            className: "driver-truck-icon",
+            html: '<div class="driver-truck-marker">🚚</div>',
+            iconSize: [48, 48],
+            iconAnchor: [24, 24]
+          });
+          myMarker = L.marker(newLatLng, { icon: truckIcon }).addTo(map);
+          map.setView(newLatLng, 13); // Follow truck initially
+        } else {
+          myMarker.setLatLng(newLatLng);
+          // Optional: Pan map to follow truck?
+          map.panTo(newLatLng);
+        }
+
+      } catch (e) {
+        console.error("Connection error:", e);
+      }
+    }
+
+    // Poll every 1s
+    setInterval(updateDashboard, 1000);
+    updateDashboard();
+  </script>
+</body>
+
+</html>
