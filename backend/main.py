@@ -23,7 +23,6 @@ simulation_task: asyncio.Task = None
 async def simulation_loop():
     """But simulation loop to tick the world."""
     global SIMULATION_RUNNING
-    logger.info("Simulation loop started.")
     try:
         while SIMULATION_RUNNING:
             await sim_instance.tick()
@@ -98,6 +97,12 @@ async def get_routes():
     from map_data import ROUTES
     return [r.dict() for r in ROUTES.values()]
 
+@app.get("/api/nodes")
+async def get_nodes():
+    """Return all map nodes (Hubs, Dests, Stations)."""
+    from map_data import MAP_NODES
+    return [n.dict() for n in MAP_NODES]
+
 @app.post("/api/routes/{route_id}/toggle")
 async def toggle_route(route_id: str):
     """Toggle route blocked status."""
@@ -111,17 +116,7 @@ async def toggle_route(route_id: str):
 
 @app.get("/api/state")
 async def get_state():
-    """Return the current simulation state. Auto-starts if needed."""
-    global SIMULATION_RUNNING, SIMULATION_STARTED, simulation_task
-    
-    is_task_active = simulation_task and not simulation_task.done()
-    
-    if not is_task_active:
-        logger.info("Auto-starting/Restarting simulation loop.")
-        SIMULATION_RUNNING = True
-        SIMULATION_STARTED = True
-        simulation_task = asyncio.create_task(simulation_loop())
-    
+    """Return the current simulation state."""
     return sim_instance.get_state()
 
 @app.get("/api/config")
@@ -144,20 +139,22 @@ async def start_simulation():
     sim_instance._init_trucks()
     sim_instance.current_time = sim_instance.current_time.replace(hour=8, minute=0)
     
-    # 2. Reset all routes to active (Open)
-    from map_data import ROUTES
-    for r in ROUTES.values():
-        r.is_active = True
+    # 2. AI & Cooldown Reset
+    from agent_service import agent_service
+    agent_service.reset_cooldown()
         
-    logger.info("World state reset: Trucks returned to Hubs, all roads opened.")
+    logger.info("Simulation backend state reset (Roadblocks retained).")
 
     # 3. Ensure loop is running
+    SIMULATION_RUNNING = True 
     is_task_active = simulation_task and not simulation_task.done()
+    
     if not is_task_active:
-        SIMULATION_RUNNING = True
         SIMULATION_STARTED = True
         simulation_task = asyncio.create_task(simulation_loop())
-        logger.info("Simulation loop (re)started via /api/start")
+        logger.info(f"Simulation loop STARTED. Task ID: {id(simulation_task)}")
+    else:
+        logger.info(f"Simulation loop ALREADY RUNNING. Flag set to True. Task ID: {id(simulation_task)}")
     
     return {"message": "Simulation started/reset"}
 
@@ -193,6 +190,16 @@ async def update_truck(truck_id: str, data: dict):
     if "capacity_used_percent" in data:
         truck.capacity_used_percent = data["capacity_used_percent"]
     return {"message": "Truck updated successfully"}
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(os.path.join(FRONTEND_DIR, "img", "ChatGPT Image Jan 31, 2026, 10_24_13 PM.png"))
+    
+# Root Static Mount (Fallback for assets like /img, /home.html, etc)
+
+# Must be at the end to not shadow other routes
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
 
 if __name__ == "__main__":
     import uvicorn

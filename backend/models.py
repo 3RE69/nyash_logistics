@@ -39,11 +39,13 @@ class TruckState(BaseModel):
     destination_node: str = "" # Final target
     route_nodes: List[str]
     location: Location
-    fuel_percent: int
-    capacity_used_percent: int
-    status: Literal["EN_ROUTE", "REROUTING", "STOPPED_FOR_FUEL", "IDLE", "ARRIVED"]
+    fuel_percent: float
+    capacity_used_percent: float
+    status: Literal["EN_ROUTE", "REROUTING", "STOPPED_FOR_FUEL", "IDLE", "ARRIVED", "REFUELING"]
+    wait_time_ticks: int = 0 # New: for refueling wait time
     eta_minutes: int
     alerts: List[str] = []
+    thoughts: List[str] = [] # Step-by-step AI reasoning
     route_coordinates: List[Location] = []
     active_route_id: str = ""
 

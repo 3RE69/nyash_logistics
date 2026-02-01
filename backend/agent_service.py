@@ -14,9 +14,14 @@ load_dotenv()
 # --- Tools ---
 
 @tool
-def get_route_info(start_lat: float, start_lng: float, end_lat: float, end_lng: float):
-    """Calculates route distance and duration between two points using OSRM."""
-    return RoutingEngine.get_route((start_lat, start_lng), (end_lat, end_lng))
+async def get_route_info(start_lat: float, start_lng: float, end_lat: float, end_lng: float):
+    """
+    Calculates route distance and duration between two points using OSRM.
+    DO NOT call this if start and end coordinates are the same.
+    """
+    if start_lat == end_lat and start_lng == end_lng:
+        return {"distance_km": 0.0, "duration_min": 0.0, "message": "Start and end are identical."}
+    return await RoutingEngine.get_route((start_lat, start_lng), (end_lat, end_lng))
 
 @tool
 def check_traffic(segment_id: str):
@@ -26,7 +31,7 @@ def check_traffic(segment_id: str):
     return random.choice(["CLEAR", "CLEAR", "MODERATE", "HEAVY"])
 
 @tool
-def optimize_route(current_location: str, destinations: List[str]):
+async def optimize_route(current_location: str, destinations: List[str]):
     """
     Optimizes the order of visiting multiple destinations from a starting point.
     Returns the optimal sequence of locations.
@@ -44,7 +49,7 @@ def optimize_route(current_location: str, destinations: List[str]):
             return f"Error: Location {p} unknown"
             
     # 2. Get Distance Matrix from OSRM
-    matrix = RoutingEngine.get_distance_matrix(coords)
+    matrix = await RoutingEngine.get_distance_matrix(coords)
     if not matrix:
         return "Error fetching distance matrix"
         
@@ -67,6 +72,12 @@ def get_available_routes(origin: str, destination: str):
         if r.origin == origin and r.destination == destination and r.is_active
     ]
 
+@tool
+def get_fuel_stations():
+    """Returns a list of all fuel stations and their coordinates in the system."""
+    from map_data import LOCATIONS_COORDS
+    return {k: v for k, v in LOCATIONS_COORDS.items() if k.startswith("FUEL")}
+
 # --- Agent Service ---
 
 class AgentService:
@@ -80,26 +91,34 @@ class AgentService:
             api_key=api_key or "gsk_..."
         )
         
-        self.tools = [get_route_info, check_traffic, optimize_route, get_available_routes]
+        self.tools = [get_route_info, check_traffic, optimize_route, get_available_routes, get_fuel_stations]
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", "You are an autonomous logistics agent managing a truck. "
                        "Your goal is to ensure timely delivery while minimizing cost and risk.\n\n"
-                       "VALID LOCATION IDs:\n"
+                        "VALID LOCATION IDs:\n"
                        "- Hubs: HUB_SOUTH, HUB_EAST, HUB_NORTH_EAST\n"
                        "- Destinations: DEST_WEST, DEST_NORTH, DEST_NORTH_WEST\n"
-                       "- Junctions: J_CENTRAL, J_BYPASS, J_NORTH\n\n"
-                       "When a roadblock or traffic jam occurs, you MUST:\n"
-                       "1. Identify the 'destination_node' from the 'truck_state'.\n"
-                       "2. Use 'get_available_routes' to find options between origin Hub and that specific destination_node.\n"
-                       "3. Only use IDs from the list above. Do NOT hallucinate names like 'FINAL_DEST'.\n"
-                       "4. Decide whether to REROUTE to a specific valid selected_route_id or CONTINUE.\n\n"
+                       "- Junctions: J_CENTRAL, J_BYPASS, J_NORTH\n"
+                       "- Fuel Stations: FUEL_A, FUEL_B\n\n"
+                       "When a roadblock or traffic jam occurs, you MUST follow these logical steps:\n"
+                       "1.  **Analyze World State**: Identify the 'destination_node' and current active route.\n"
+                       "2.  **Scan Options**: Use 'get_available_routes' to find ALL valid alternatives for the target destination.\n"
+                       "3.  **Evaluate Risk**: Use 'check_traffic' on candidate segments to assess congestion.\n"
+                       "4.  **Optimal Selection**: Select the route with the best balance of time, fuel, and risk.\n\n"
+                       "**BEWARE**: Do NOT call tools redundantely. If you call 'get_available_routes', use its 'route_id' output directly. Do NOT call 'get_route_info' with the same start and end coordinates; it will fail.\n"
+                       "If you are stuck, simply 'CONTINUE' with the current route if possible.\n\n"
+                       "When a LOW_FUEL event occurs:\n"
+                       "1.  **Find Stations**: Use 'get_fuel_stations' to find the closest one to your 'current_node'.\n"
+                       "2.  **Plan Stop**: Select 'action': 'REROUTE' and provide 'new_route_nodes' that include the fuel station as an intermediate stop before the final destination.\n\n"
                        "IMPORTANT: Final response MUST be JSON exactly in this format:\n"
                        "{{\n"
                        "  \"action\": \"REROUTE | CONTINUE\",\n"
-                       "  \"reasoning\": \"State which route ID was chosen and why.\",\n"
+                       "  \"reasoning\": \"Summary of final decision.\",\n"
+                       "  \"thoughts\": [\"Step 1: Found roadblock on R_EN_HWY\", \"Step 2: Scanned alternatives...\", ...],\n"
                        "  \"confidence\": 0.9,\n"
-                       "  \"selected_route_id\": \"R_SW_HWY\"\n"
+                       "  \"selected_route_id\": \"R_SW_HWY\",\n"
+                       "  \"new_route_nodes\": [\"FUEL_A\", \"DEST_WEST\"]\n"
                        "}}"),
             ("human", "Current State: {truck_state}\nEvent: {event}\nDetermine best action."),
             ("placeholder", "{agent_scratchpad}"),
@@ -119,18 +138,41 @@ class AgentService:
                 from langchain_classic.agents.agent import AgentExecutor
             
         self.agent = create_tool_calling_agent(self.llm, self.tools, prompt)
-        self.agent_executor = AgentExecutor(agent=self.agent, tools=self.tools, verbose=True)
+        self.agent_executor = AgentExecutor(
+            agent=self.agent, 
+            tools=self.tools, 
+            verbose=True,
+            max_iterations=5,
+            handle_parsing_errors=True
+        )
+        self.cooldown_until = 0 # Unix timestamp to wait until after a 429 error
+
+    def reset_cooldown(self):
+        self.cooldown_until = 0
+        print("[AI SERVICE] Rate-limit cooldown reset.")
 
     async def decide(self, truck: TruckState, event_type: str, details: dict = {}) -> AgentDecision:
         """
         Run the agent to make a decision.
         Returns an AgentDecision object.
         """
-        # OPTIMIZATION: Do not send huge coordinate lists to the LLM.
-        # This fixes the "413 Payload Too Large" error.
+        # RATE LIMIT GUARD: If we recently hit a 429, skip LLM and go to heuristic
+        import time
+        if time.time() < self.cooldown_until:
+            wait_sec = int(self.cooldown_until - time.time())
+            return self._heuristic_fallback(truck, event_type, f"AI at capacity. Cooldown: {wait_sec}s.")
+
+        # OPTIMIZATION: Do not send huge coordinate lists or long histories to the LLM.
+        # This fixes the "413 Payload Too Large" error for low-tier TPM limits.
         truck_data = truck.dict()
         if "route_coordinates" in truck_data:
             del truck_data["route_coordinates"]
+            
+        # Limit history to last 5 entries to keep prompt small
+        if "thoughts" in truck_data:
+            truck_data["thoughts"] = truck_data["thoughts"][-5:]
+        if "alerts" in truck_data:
+            truck_data["alerts"] = truck_data["alerts"][-3:]
             
         import json
         truck_dump = json.dumps(truck_data)
@@ -170,21 +212,59 @@ class AgentService:
                 reasoning=data.get("reasoning", "Agent completed analysis."),
                 confidence=float(data.get("confidence", 1.0)),
                 impact=impact_data
-            )
+            ), data.get("thoughts", [])
             
         except Exception as e:
-            print(f"Agent Processing Error: {e}")
-            from datetime import datetime
-            import uuid
-            return AgentDecision(
-                decision_id=str(uuid.uuid4()),
-                timestamp=datetime.utcnow(),
-                truck_id=truck.truck_id,
-                action="CONTINUE",
-                reasoning=f"Fallback due to processing error: {e}",
-                confidence=0.0,
-                impact={}
-            ) 
+            return self._heuristic_fallback(truck, event_type, str(e))
+            
+    def _heuristic_fallback(self, truck: TruckState, event_type: str, error_msg: str) -> (AgentDecision, List[str]):
+        """Provides a non-AI sensible action when the LLM is unavailable."""
+        from datetime import datetime
+        import uuid
+        import time
+        
+        # If it's a rate limit error, set a cooldown of 2 minutes
+        display_error = error_msg
+        if "429" in str(error_msg):
+            self.cooldown_until = time.time() + 120 # 2 minute silence
+            display_error = "Groq API Rate Limit Reached (Daily Tokens). Switched to Heuristic Safety Protocol."
+            print(f"[AI SERVICE] Rate limit reached. Muting AI for 120s. Using fallback.")
+
+        action = "CONTINUE"
+        impact_data = {}
+        reasoning = display_error
+        thoughts = ["System: LLM Unavailable. Initiating Safety Protocol."]
+
+        if "LOW_FUEL" in event_type:
+            from map_data import LOCATIONS_COORDS
+            stations = {k: v for k, v in LOCATIONS_COORDS.items() if k.startswith("FUEL")}
+            current_pos = (truck.location.lat, truck.location.lng)
+            closest_station = min(stations.keys(), key=lambda s: ((stations[s][0]-current_pos[0])**2 + (stations[s][1]-current_pos[1])**2)**0.5)
+            
+            action = "REROUTE"
+            impact_data = {"new_route_nodes": [closest_station, truck.destination_node]}
+            reasoning = "SAFETY PROTOCOL: Low fuel detected and AI unavailable. Rerouting to nearest station."
+            thoughts.append(f"Heuristic: Target {closest_station} as emergency stop.")
+
+        elif "ROAD_CLOSED" in event_type or "BLOCKED" in event_type:
+            from map_data import ROUTES
+            alt_routes = [r for r in ROUTES.values() if r.is_active and r.route_id != truck.active_route_id and r.destination == truck.destination_node]
+            if alt_routes:
+                best_alt = alt_routes[0]
+                action = "REROUTE"
+                impact_data = {"selected_route_id": best_alt.route_id}
+                reasoning = f"SAFETY PROTOCOL: Road blocked and AI unavailable. Switched to alternative: {best_alt.route_id}."
+                thoughts.append(f"Heuristic: Using backup route {best_alt.route_id}.")
+
+        return AgentDecision(
+            decision_id=str(uuid.uuid4()),
+            timestamp=datetime.utcnow(),
+            truck_id=truck.truck_id,
+            action=action,
+            reasoning=reasoning,
+            confidence=0.0,
+            impact=impact_data
+        ), thoughts
 
 # Global Instance
 agent_service = AgentService()

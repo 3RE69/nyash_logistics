@@ -1,11 +1,13 @@
 fastapi
 uvicorn
 pydantic
-langchain
+langchain>=0.1.16
 langchain-groq
+langchain-community
 requests
 ortools
 networkx
 python-dotenv
 websockets
 jinja2
+polyline

@@ -2,313 +2,321 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <title>ROUTEXA | Fleet Operations</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>ROUTEXA | Fleet Manager</title>
 
-  <!-- Leaflet -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    :root {
-      --bg: #0b0f14;
-      --panel: #121821;
-      --card: #151c27;
-      --accent: #2dd4bf;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --border: rgba(255, 255, 255, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-      font-family: "Inter", system-ui, sans-serif;
-    }
-
     body {
+      font-family: 'DM Sans', sans-serif;
+      background: #0b0f14;
+      color: #f1f5f9;
       margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      height: 100vh;
     }
 
-    /* Sidebar */
-    aside {
-      width: 240px;
-      background: #0f1520;
-      padding: 20px;
-      border-right: 1px solid var(--border);
-    }
-
-    .logo {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--accent);
-      margin-bottom: 30px;
-    }
-
-    nav a {
-      display: block;
-      padding: 10px 14px;
-      margin-bottom: 8px;
-      color: var(--muted);
-      text-decoration: none;
-      border-radius: 8px;
-    }
-
-    nav a.active,
-    nav a:hover {
-      background: rgba(45, 212, 191, 0.1);
-      color: var(--accent);
-    }
-
-    /* Main */
-    main {
-      flex: 1;
-      padding: 24px;
-      overflow-y: auto;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-
-    header h1 {
-      font-size: 22px;
-    }
-
-    .btn {
-      background: var(--accent);
-      color: #000;
-      border: none;
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    /* Stats */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .stat-card {
-      background: var(--card);
-      padding: 18px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      display: flex;
-      gap: 14px;
-      align-items: center;
-    }
-
-    .stat-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      background: rgba(45, 212, 191, 0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--accent);
-      font-size: 20px;
-    }
-
-    .stat-label {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .stat-value {
-      font-size: 20px;
-      font-weight: 600;
-    }
-
-    /* Content */
-    .content {
-      display: grid;
-      grid-template-columns: 2.2fr 1fr;
-      gap: 20px;
-    }
-
-    .panel {
-      background: var(--panel);
+    .card {
+      background: #121821;
       border-radius: 16px;
-      border: 1px solid var(--border);
-      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .panel h2 {
-      font-size: 16px;
-      margin-bottom: 12px;
-    }
-
-    /* Map */
     #map {
-      height: 420px;
+      height: 600px;
       border-radius: 14px;
       overflow: hidden;
     }
 
-    /* Alerts */
-    .alert {
-      background: #111827;
-      border-left: 4px solid var(--accent);
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 12px;
+    /* =========================
+       MAP-ONLY STYLES (SCOPED)
+       ========================= */
+
+    #map .route-shadow {
+      filter: blur(4px);
     }
 
-    .alert-title {
-      font-weight: 600;
-      font-size: 14px;
+    #map .route-core {
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    .alert-desc {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 4px;
+    #map .vehicle {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #2dd4bf;
+      box-shadow:
+        0 0 0 3px rgba(45, 212, 191, 0.25),
+        0 0 10px rgba(45, 212, 191, 0.6);
     }
 
-    #map {
-      filter: brightness(1.05) contrast(1.2) saturate(1.1);
-      border-radius: 14px;
+    #map .block {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+    }
+
+    /* Node Styles */
+    .node-warehouse {
+      background: #3b82f6;
+      border: 2px solid #fff;
+      border-radius: 4px;
+      width: 14px;
+      height: 14px;
+      box-shadow: 0 0 8px #3b82f6;
+    }
+
+    .node-fuel {
+      background: #f59e0b;
+      width: 12px;
+      height: 12px;
+      clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+      box-shadow: 0 0 8px #f59e0b;
+    }
+
+    .node-city {
+      background: #10b981;
+      border-radius: 50%;
+      width: 12px;
+      height: 12px;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .node-junction {
+      background: #64748b;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
     }
   </style>
 </head>
 
-<body>
+<body class="flex min-h-screen">
 
-  <aside>
-    <div class="logo">ROUTEXA</div>
-    <nav>
-      <a href="/manager" class="active">Dashboard</a>
-      <a href="/manager/fleet">Fleet</a>
-      <a href="/manager/loads">Loads</a>
-      <a href="#" style="opacity: 0.5; cursor: default;">Live Map</a> <!-- Already on dashboard -->
-      <a href="/manager/analytics">Analytics</a>
-      <a href="/manager/alerts">Alerts</a>
+  <!-- Sidebar -->
+  <aside class="w-64 bg-[#0b0f14] border-r border-gray-800 p-6">
+    <div class="text-2xl font-bold text-cyan-400 mb-12">ROUTEXA</div>
+    <nav class="space-y-2">
+      <a href="/manager" class="block px-4 py-3 bg-cyan-500/10 text-cyan-400 rounded">Dashboard</a>
+      <a href="/manager/fleet" class="block px-4 py-3 text-gray-400">Fleet</a>
+      <a href="/manager/loads" class="block px-4 py-3 text-gray-400">Loads</a>
+      <a href="/manager/analytics" class="block px-4 py-3 text-gray-400">Analytics</a>
+      <a href="/manager/alerts" class="block px-4 py-3 text-gray-400">Alerts</a>
     </nav>
   </aside>
 
-  <main>
-
-    <header>
-      <h1>Fleet Operations</h1>
-      <button class="btn">AI Optimize</button>
-    </header>
-
-    <!-- Stats -->
-    <section class="stats">
-      <div class="stat-card">
-        <div class="stat-icon">🚚</div>
-        <div>
-          <div class="stat-label">Active Vehicles</div>
-          <div class="stat-value" id="activeVehicles"></div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">💰</div>
-        <div>
-          <div class="stat-label">Revenue</div>
-          <div class="stat-value" id="revenue"></div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">📊</div>
-        <div>
-          <div class="stat-label">Utilization</div>
-          <div class="stat-value" id="utilization"></div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">📦</div>
-        <div>
-          <div class="stat-label">Pending Loads</div>
-          <div class="stat-value" id="pendingLoads"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Map + Alerts -->
-    <section class="content">
-
-      <div class="panel">
-        <h2>Live Fleet Map</h2>
+  <!-- Main -->
+  <main class="flex-1 p-10 overflow-y-auto">
+    <div class="grid grid-cols-12 gap-8">
+      <div class="col-span-8 card p-6">
+        <h2 class="text-sm uppercase text-gray-400 mb-4">Live Fleet Map</h2>
         <div id="map"></div>
       </div>
 
-      <div class="panel">
-        <h2>Smart Alerts</h2>
+      <!-- AI Insights Panel -->
+      <div class="col-span-4 space-y-6">
+        <div class="card p-6 h-[600px] flex flex-col">
+          <h2 class="text-sm uppercase text-gray-400 mb-4 flex justify-between items-center">
+            <span>AI Reasoning Stream</span>
+            <span class="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded">Live Insights</span>
+          </h2>
 
-        <!-- Backend injects alerts here -->
-        <div id="alerts"></div>
+          <div id="ai-log" class="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+            <div class="text-gray-500 text-sm italic">Waiting for agent decisions...</div>
+          </div>
+        </div>
       </div>
-
-    </section>
-
+    </div>
   </main>
 
-  <!-- Leaflet -->
+  <!-- MAP SCRIPT -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <script>
-    // Initialize Dark Map
-    const map = L.map("map", { zoomControl: false }).setView([18.5204, 73.8567], 10);
+    const map = L.map('map', { zoomControl: false })
+      .setView([18.5204, 73.8567], 11);
 
-    L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png", {
-      maxZoom: 20,
-      attribution: "© OpenStreetMap © Stadia Maps"
-    }).addTo(map);
+    L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    ).addTo(map);
 
-    const markers = {};
+    const vehicles = {};
+    const routes = {};
+    const shadows = {};
+    const blocks = {};
 
-    async function updateFleet() {
-      try {
-        const res = await fetch('/api/state');
-        const data = await res.json();
-
-        // Update Stats
-        document.getElementById('activeVehicles').innerText = data.trucks.length;
-        document.getElementById('revenue').innerText = "$12.4k"; // Mock
-        document.getElementById('utilization').innerText = "85%"; // Mock
-        document.getElementById('pendingLoads').innerText = "4"; // Mock
-
-        // Update Map
-        data.trucks.forEach(truck => {
-          if (markers[truck.truck_id]) {
-            markers[truck.truck_id].setLatLng([truck.location.lat, truck.location.lng]);
-            markers[truck.truck_id].setPopupContent(`<b>${truck.truck_id}</b><br>${truck.status}`);
-          } else {
-            const marker = L.circleMarker([truck.location.lat, truck.location.lng], {
-              radius: 8,
-              fillColor: "#2dd4bf",
-              color: "#fff",
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.8
-            }).addTo(map).bindPopup(`<b>${truck.truck_id}</b>`);
-            markers[truck.truck_id] = marker;
-          }
-        });
-
-      } catch (e) { console.error(e); }
+    function trafficColor(r = 0.4) {
+      if (r < 0.3) return '#22c55e';
+      if (r < 0.6) return '#f59e0b';
+      return '#ef4444';
     }
 
-    setInterval(updateFleet, 1000);
-    updateFleet();
-  </script>
+    function vehicleIcon(status = 'EN_ROUTE') {
+      let color = '#2dd4bf';
+      if (status === 'REFUELING') color = '#f59e0b';
+      if (status === 'STOPPED_FOR_FUEL') color = '#f59e0b';
+      if (status === 'ARRIVED') color = '#a855f7';
 
+      return L.divIcon({
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
+        className: '',
+        html: `<div class="vehicle" style="background: ${color}; box-shadow: 0 0 0 3px ${color}40, 0 0 10px ${color}aa;"></div>`
+      });
+    }
+
+    function nodeIcon(type) {
+      let cls = 'node-city';
+      if (type === 'WAREHOUSE') cls = 'node-warehouse';
+      if (type === 'FUEL_STATION') cls = 'node-fuel';
+      if (type === 'JUNCTION') cls = 'node-junction';
+      return L.divIcon({
+        className: '',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+        tooltipAnchor: [0, -7],
+        html: `<div class="${cls}"></div>`
+      });
+    }
+
+    async function triggerEvent(truckId, type) {
+      await fetch('/api/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ truck_id: truckId, event_type: type })
+      });
+      sync();
+    }
+
+    async function toggleRoute(routeId) {
+      await fetch(`/api/routes/${routeId}/toggle`, { method: 'POST' });
+      sync();
+    }
+
+    async function triggerReset() {
+      if (confirm("Reset entire simulation?")) {
+        await fetch('/api/start', { method: 'POST' });
+        sync();
+      }
+    }
+
+    function blockIcon() {
+      return L.divIcon({
+        iconSize: [14, 14],
+        className: '',
+        html: `<div class="block"></div>`
+      });
+    }
+
+    async function sync() {
+      const state = await fetch('/api/state').then(r => r.json());
+      if (!state.trucks) return;
+
+      // Update AI Log UI
+      const aiLog = document.getElementById('ai-log');
+      let logHTML = '';
+      state.trucks.forEach(t => {
+        if (t.thoughts && t.thoughts.length > 0) {
+          logHTML += `
+            <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+              <div class="flex justify-between items-start mb-2">
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-cyan-400">TRUCK ${t.truck_id}</span>
+                  <span class="text-[9px] text-gray-500">Fuel: ${t.fuel_percent.toFixed(1)}%</span>
+                </div>
+                <span class="text-[10px] text-gray-500">${state.time}</span>
+              </div>
+              <div class="text-xs text-gray-300 mb-2 font-medium">${t.alerts?.[0] || 'Optimizing path...'}</div>
+              <div class="space-y-1">
+                ${t.thoughts.map(thought => `
+                  <div class="text-[10px] text-gray-500 flex gap-2">
+                    <span class="text-cyan-500/50">▹</span>
+                    <span>${thought}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+      });
+      if (logHTML) aiLog.innerHTML = logHTML;
+
+      state.trucks.forEach(t => {
+        const pos = [t.location.lat, t.location.lng];
+
+        if (t.route_coordinates?.length > 1) {
+          const pts = t.route_coordinates.map(p => [p.lat, p.lng]);
+          const color = trafficColor(0.4);
+
+          if (!routes[t.truck_id]) {
+            shadows[t.truck_id] = L.polyline(pts, {
+              color: '#000',
+              weight: 6,
+              opacity: 0.2,
+              className: 'route-shadow'
+            }).addTo(map);
+
+            routes[t.truck_id] = L.polyline(pts, {
+              color,
+              weight: 3,
+              opacity: 0.8,
+              className: 'route-core'
+            }).addTo(map);
+          } else {
+            shadows[t.truck_id].setLatLngs(pts);
+            routes[t.truck_id].setLatLngs(pts);
+          }
+        }
+
+        if (!vehicles[t.truck_id]) {
+          vehicles[t.truck_id] = L.marker(pos, { icon: vehicleIcon(t.status) }).addTo(map);
+        } else {
+          vehicles[t.truck_id].setLatLng(pos);
+          vehicles[t.truck_id].setIcon(vehicleIcon(t.status));
+        }
+      });
+
+      const rts = await fetch('/api/routes').then(r => r.json());
+
+      rts.forEach(r => {
+        if (!r.is_active && !blocks[r.route_id]) {
+          const mapCoords = {
+            'R_SW_HWY': [18.5074, 73.8077],
+            'R_SW_CITY': [18.5204, 73.8567],
+            'R_SW_SATELLITE': [18.5204, 73.8567],
+            'R_EN_HWY': [18.5204, 73.8567],
+            'R_EN_BYPASS': [18.5074, 73.8077],
+            'R_EN_VILLAGE': [18.5793, 73.9787],
+            'R_NENW_DIRECT': [18.6298, 73.7997],
+            'R_NENW_ALT': [18.5204, 73.8567]
+          };
+          const pos = mapCoords[r.route_id] || [18.5204, 73.8567];
+          blocks[r.route_id] = L.marker(pos, { icon: blockIcon() }).addTo(map);
+        }
+        if (r.is_active && blocks[r.route_id]) {
+          map.removeLayer(blocks[r.route_id]);
+          delete blocks[r.route_id];
+        }
+      });
+
+      // Load static markers once
+      if (!window.nodesLoaded) {
+        const nodes = await fetch('/api/nodes').then(r => r.json());
+        nodes.forEach(n => {
+          L.marker([n.lat, n.lng], { icon: nodeIcon(n.type) })
+            .bindTooltip(`${n.node_id} (${n.type})`, { permanent: false, direction: 'top' })
+            .addTo(map);
+        });
+        window.nodesLoaded = true;
+      }
+    }
+
+    setInterval(sync, 2000);
+    sync();
+  </script>
 </body>
 
 </html>

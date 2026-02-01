@@ -1,157 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <title>ROUTEXA | Loads</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        :root {
-            --bg: #0b0f14;
-            --panel: #121821;
-            --card: #151c27;
-            --accent: #2dd4bf;
-            --text: #e5e7eb;
-            --muted: #9ca3af;
-            --border: rgba(255, 255, 255, 0.08);
-        }
+<meta charset="UTF-8">
+<title>ROUTEXA | Loads</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        * {
-            box-sizing: border-box;
-            font-family: "Inter", system-ui, sans-serif;
-        }
+<style>
+:root{
+  --bg:#0b0f14;
+  --panel:#121821;
+  --accent:#2dd4bf;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --border:rgba(255,255,255,.08);
+}
+*{box-sizing:border-box;font-family:Inter,system-ui}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  display:flex;height:100vh;
+}
+aside{
+  width:240px;background:#0f1520;padding:20px;
+  border-right:1px solid var(--border)
+}
+.logo{font-size:22px;font-weight:700;color:var(--accent);margin-bottom:30px}
+nav a{
+  display:block;padding:10px 14px;border-radius:8px;
+  color:var(--muted);text-decoration:none
+}
+nav a.active{background:rgba(45,212,191,.1);color:var(--accent)}
+main{flex:1;padding:26px}
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:24px
+}
 
-        body {
-            margin: 0;
-            background: var(--bg);
-            color: var(--text);
-            display: flex;
-            height: 100vh;
-        }
+/* CARD STYLE */
+.load-card{
+  background:linear-gradient(180deg,#121821,#0d1320);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:22px;
+  margin-bottom:18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:0 20px 40px rgba(0,0,0,.35)
+}
+.load-info h3{
+  margin:0 0 8px;font-size:16px;font-weight:600
+}
+.load-meta{font-size:13px;color:var(--muted)}
 
-        aside {
-            width: 240px;
-            background: #0f1520;
-            padding: 20px;
-            border-right: 1px solid var(--border);
-        }
+.btn{
+  background:var(--accent);color:#000;
+  border:none;border-radius:10px;
+  padding:10px 18px;font-weight:600;cursor:pointer
+}
 
-        .logo {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--accent);
-            margin-bottom: 30px;
-        }
+.edit-btn{
+  background:transparent;
+  border:1px solid var(--accent);
+  color:var(--accent);
+  border-radius:10px;
+  padding:8px 14px;
+  cursor:pointer;
+}
 
-        nav a {
-            display: block;
-            padding: 10px 14px;
-            margin-bottom: 8px;
-            color: var(--muted);
-            text-decoration: none;
-            border-radius: 8px;
-        }
-
-        nav a:hover,
-        nav a.active {
-            background: rgba(45, 212, 191, 0.1);
-            color: var(--accent);
-        }
-
-        main {
-            flex: 1;
-            padding: 24px;
-            overflow-y: auto;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .load-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .load-info h3 {
-            margin: 0 0 8px 0;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .load-meta {
-            font-size: 13px;
-            color: var(--muted);
-        }
-
-        .btn {
-            background: var(--accent);
-            color: #000;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .btn:hover {
-            opacity: 0.9;
-        }
-    </style>
+/* MODAL */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;align-items:center;justify-content:center
+}
+.modal-content{
+  width:360px;background:var(--panel);
+  padding:26px;border-radius:16px
+}
+.modal-content input{
+  width:100%;margin-bottom:12px;
+  padding:10px;border-radius:8px;
+  border:1px solid var(--border);
+  background:#0f1520;color:white
+}
+</style>
 </head>
 
 <body>
-    <aside>
+
+<aside>
         <div class="logo">ROUTEXA</div>
         <nav>
             <a href="/manager">Dashboard</a>
             <a href="/manager/fleet">Fleet</a>
-            <a href="/manager/loads" class="active">Loads</a>
-            <a href="/manager/analytics">Analytics</a>
+            <a href="/manager/loads">Loads</a>
+            <a href="/manager/analytics" class="active">Analytics</a>
             <a href="/manager/alerts">Alerts</a>
         </nav>
     </aside>
-    <main>
-        <header>
-            <h1>Active Loads</h1> <button class="btn">+ New Load</button>
-        </header>
+<aside>
+  <div class="logo">ROUTEXA</div>
+  <nav>
+    <a class="active">Loads</a>
+  </nav>
+</aside>
 
-        <!-- Mock Data for Active Loads -->
-        <div class="load-card">
-            <div class="load-info">
-                <h3>📦 Electronics Components (Order #4921)</h3>
-                <div class="load-meta">From: <b>Mumbai Port</b> — To: <b>Pane Manjri WH</b></div>
-                <div class="load-meta" style="margin-top:4px; color: #34d399;">Assigned to: T1 (En Route)</div>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-size: 20px; font-weight: bold;">$850</div>
-                <div style="color: var(--muted); font-size: 12px;">Revenue</div>
-            </div>
-        </div>
+<main>
+<header>
+  <h1>Active Loads</h1>
+  <button class="btn" onclick="openAdd()">+ New Load</button>
+</header>
 
-        <h2 style="margin: 30px 0 16px 0; font-size: 18px;">Unassigned / Pending Overview</h2>
+<div id="loadsContainer"></div>
+</main>
 
-        <div class="load-card" style="opacity: 0.8;">
-            <div class="load-info">
-                <h3>🧱 Construction Material (Order #5011)</h3>
-                <div class="load-meta">From: <b>PCMC Industrial</b> — To: <b>Hinjewadi Ph3</b></div>
-                <div class="load-meta" style="margin-top:4px; color: #fbbf24;">Pending Allocation</div>
-            </div>
-            <button class="btn"
-                style="background: transparent; border: 1px solid var(--accent); color: var(--accent);">Auto
-                Assign</button>
-        </div>
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h2 id="modalTitle">New Load</h2>
+    <input id="title" placeholder="Load Title">
+    <input id="from" placeholder="From Location">
+    <input id="to" placeholder="To Location">
+    <input id="price" placeholder="Revenue ($)">
+    <button class="btn" onclick="saveLoad()">Save</button>
+  </div>
+</div>
 
-    </main>
+<script>
+const modal = document.getElementById("modal");
+const container = document.getElementById("loadsContainer");
+const modalTitle = document.getElementById("modalTitle");
+
+let editIndex = null;
+
+/* DEFAULT 4 LOADS */
+const defaultLoads=[
+ {title:"T1: Sand 8 ton",from:"Katraj",to:"Hinjawadi",price:"50"},
+ {title:"T2: Cement 6 ton",from:"Hadapsar",to:"Chakan",price:"60"},
+ {title:"T3: Gravel 7 ton",from:"Wagholi",to:"Talegaon",price:"70"},
+];
+
+if(!localStorage.getItem("loads")){
+  localStorage.setItem("loads",JSON.stringify(defaultLoads));
+}
+
+function openAdd(){
+  editIndex=null;
+  modalTitle.innerText="New Load";
+  title.value=from.value=to.value=price.value="";
+  modal.style.display="flex";
+}
+
+function openEdit(index){
+  const loads=JSON.parse(localStorage.getItem("loads"));
+  const l=loads[index];
+  editIndex=index;
+  modalTitle.innerText="Edit Load";
+  title.value=l.title;
+  from.value=l.from;
+  to.value=l.to;
+  price.value=l.price;
+  modal.style.display="flex";
+}
+
+modal.onclick=e=>{if(e.target===modal)modal.style.display="none"}
+
+function saveLoad(){
+  const loads=JSON.parse(localStorage.getItem("loads"));
+  const data={
+    title:title.value,
+    from:from.value,
+    to:to.value,
+    price:price.value
+  };
+
+  if(editIndex!==null){
+    loads[editIndex]=data;
+  }else{
+    loads.push(data);
+  }
+
+  localStorage.setItem("loads",JSON.stringify(loads.slice(-4)));
+  modal.style.display="none";
+  renderLoads();
+}
+
+function renderLoads(){
+  const loads=JSON.parse(localStorage.getItem("loads"));
+  container.innerHTML="";
+  loads.forEach((l,i)=>{
+    container.innerHTML+=`
+    <div class="load-card">
+      <div class="load-info">
+        <h3>📦 ${l.title}</h3>
+        <div class="load-meta">From <b>${l.from}</b> → <b>${l.to}</b></div>
+        <div class="load-meta" style="color:#34d399">Pending Assignment</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:20px;font-weight:700">$${l.price}</div>
+        <button class="edit-btn" onclick="openEdit(${i})">Edit</button>
+      </div>
+    </div>`;
+  });
+}
+renderLoads();
+</script>
+
 </body>
-
 </html>

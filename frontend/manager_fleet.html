@@ -122,7 +122,11 @@
 
 <body>
     <aside>
-        <div class="logo">ROUTEXA</div>
+        <div class="logo">
+            <a href="/" style="text-decoration: none; color: var(--accent);">
+                ROUTEXA
+            </a>
+        </div>
         <nav>
             <a href="/manager">Dashboard</a>
             <a href="/manager/fleet" class="active">Fleet</a>
@@ -143,7 +147,9 @@
                         <th>Status</th>
                         <th>Location (Lat/Lng)</th>
                         <th>Fuel</th>
+                        <th>Capacity</th>
                         <th>Current Route</th>
+
                     </tr>
                 </thead>
                 <tbody id="fleetTableBody">
@@ -163,13 +169,29 @@
                     <td><span class="badge ${t.status.toLowerCase()}">${t.status}</span></td>
                     <td style="font-family: monospace; color: var(--muted)">${t.location.lat.toFixed(4)}, ${t.location.lng.toFixed(4)}</td>
                     <td>
-                        <div style="width: 80px; height: 6px; background: #333; border-radius: 3px; overflow: hidden;">
-                            <div style="width: ${t.fuel_percent}%; height: 100%; background: ${t.fuel_percent > 20 ? '#34d399' : '#ef4444'};"></div>
-                        </div>
+                        <input type="number" id="fuel-${t.truck_id}" value="${t.fuel_percent}" min="0" max="100" style="width: 60px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 2px;">
+                    </td>
+                    <td>
+                        <input type="number" id="capacity-${t.truck_id}" value="${t.capacity_used_percent}" min="0" max="100" style="width: 60px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 2px;">
                     </td>
                     <td>${t.current_node} → ${t.route_nodes[0] || 'End'}</td>
+                    <td><button onclick="updateTruck('${t.truck_id}')" style="background: var(--accent); color: black; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Update</button></td>
                 </tr>
             `).join('');
+        }
+        async function updateTruck(truckId) {
+            const fuel = parseInt(document.getElementById(`fuel-${truckId}`).value);
+            const capacity = parseInt(document.getElementById(`capacity-${truckId}`).value);
+            const res = await fetch(`/api/trucks/${truckId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fuel_percent: fuel, capacity_used_percent: capacity })
+            });
+            if (res.ok) {
+                alert('Truck updated successfully');
+            } else {
+                alert('Error updating truck');
+            }
         }
         setInterval(loadFleet, 1000);
         loadFleet();

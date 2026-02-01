@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ROUTEXA | Select Service</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -24,18 +26,39 @@
 
 <body class="min-h-screen flex flex-col items-center justify-center p-8 relative">
 
-    <div class="absolute top-8 left-8 text-2xl font-bold text-cyan-400 tracking-tighter">ROUTEXA</div>
+    <div class="absolute top-8 left-8 text-2xl font-bold text-cyan-400 tracking-tighter">
+        <a href="/" style="text-decoration: none;">
+            ROUTEXA
+        </a>
+    </div>
 
     <h2 class="text-3xl font-bold mb-12 text-center">Select Your Workspace</h2>
 
-    <div class="grid md:grid-cols-2 gap-8 max-w-4xl w-full">
+    <div class="grid md:grid-cols-3 gap-8 max-w-6xl w-full">
+
+        <!-- Configuration Card -->
+        <a href="/config"
+            class="group block p-8 rounded-2xl bg-[#121821] border border-gray-800 transition-all duration-300 card-hover cursor-pointer">
+            <div
+                class="w-16 h-16 bg-green-900/30 rounded-xl flex items-center justify-center mb-6 group-hover:bg-green-500/20 transition">
+                <span class="text-3xl"><i class="fa-solid fa-gear"></i></span>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-3">Configuration</h3>
+            <p class="text-gray-400 leading-relaxed">
+                Set up simulation parameters. Configure initial fuel levels and capacity for all trucks before starting
+                the simulation.
+            </p>
+            <div class="mt-6 flex items-center text-green-400 font-semibold group-hover:translate-x-2 transition">
+                Configure <span class="ml-2">→</span>
+            </div>
+        </a>
 
         <!-- Driver Card -->
-        <a href="/driver?id=T1"
+        <a href="/driver"
             class="group block p-8 rounded-2xl bg-[#121821] border border-gray-800 transition-all duration-300 card-hover cursor-pointer">
             <div
                 class="w-16 h-16 bg-cyan-900/30 rounded-xl flex items-center justify-center mb-6 group-hover:bg-cyan-500/20 transition">
-                <span class="text-3xl">🚚</span>
+                <span class="text-3xl"><i class="fa-solid fa-truck"></i></span>
             </div>
             <h3 class="text-2xl font-bold text-white mb-3">Driver Console</h3>
             <p class="text-gray-400 leading-relaxed">
@@ -52,7 +75,7 @@
             class="group block p-8 rounded-2xl bg-[#121821] border border-gray-800 transition-all duration-300 card-hover cursor-pointer">
             <div
                 class="w-16 h-16 bg-purple-900/30 rounded-xl flex items-center justify-center mb-6 group-hover:bg-purple-500/20 transition">
-                <span class="text-3xl">🏢</span>
+                <span class="text-3xl"><i class="fa-solid fa-building"></i></span>
             </div>
             <h3 class="text-2xl font-bold text-white mb-3">Fleet Manager</h3>
             <p class="text-gray-400 leading-relaxed">

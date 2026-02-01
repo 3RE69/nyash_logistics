@@ -17,13 +17,22 @@ LOCATIONS_COORDS = {
     "J_CENTRAL": (18.5204, 73.8567),
     "J_BYPASS": (18.5074, 73.8077),
     "J_NORTH": (18.6298, 73.7997),
+
+    # Fuel Stations (New)
+    "FUEL_A": (18.5521, 73.8253),
+    "FUEL_B": (18.6542, 73.8012),
 }
 
 # Legacy Compatibility Layer for Visualization
-MAP_NODES = [
-    MapNode(node_id=name, lat=coords[0], lng=coords[1], type="CITY")
-    for name, coords in LOCATIONS_COORDS.items()
-]
+MAP_NODES = []
+for name, coords in LOCATIONS_COORDS.items():
+    node_type = "CITY"
+    if name.startswith("HUB"): node_type = "WAREHOUSE"
+    if name.startswith("DEST"): node_type = "CITY"
+    if name.startswith("J_"): node_type = "JUNCTION"
+    if name.startswith("FUEL"): node_type = "FUEL_STATION"
+    
+    MAP_NODES.append(MapNode(node_id=name, lat=coords[0], lng=coords[1], type=node_type))
 
 # --- DIVERGENT ROUTES (Multiple paths for same Start/End) ---
 ROUTES: Dict[str, Route] = {

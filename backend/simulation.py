@@ -100,16 +100,18 @@ class Simulation:
     async def tick(self):
         """Advance time by 1 minute (virtual time) every tick."""
         self.current_time += timedelta(minutes=1) 
-        print(f"[SIM] Tick at {self.current_time.strftime('%H:%M')}")
         
         from map_data import ROUTES
         for truck_id, truck in self.trucks.items():
             if truck.status == "EN_ROUTE" or truck.status == "REROUTING":
                 # Proactive Check: Is the current route blocked manually?
                 if truck.active_route_id in ROUTES and not ROUTES[truck.active_route_id].is_active:
-                    print(f"[SIM] Blocked route detected for {truck.truck_id}! Triggering AI...")
-                    await self._trigger_random_event(truck, "ROAD_CLOSED_BY_DISPATCH")
-                    continue # Skip movement for this tick to allow rerouting
+                    # Avoid spamming AI if we already alerted/started rerouting for this block
+                    if not any("Blocked route detected" in a for a in truck.alerts):
+                        print(f"[SIM] Blocked route detected for {truck.truck_id}! Triggering AI...")
+                        truck.alerts = ["Blocked route detected! Requesting AI reroute..."]
+                        await self._trigger_random_event(truck, "ROAD_CLOSED_BY_DISPATCH")
+                    continue # Skip movement while blocked
                 
                 await self._move_truck(truck)
                 
@@ -118,6 +120,18 @@ class Simulation:
                 await self._trigger_random_event(truck)
 
     async def _move_truck(self, truck: TruckState):
+        if truck.status == "REFUELING":
+            if truck.wait_time_ticks > 0:
+                truck.wait_time_ticks -= 1
+                print(f"[SIM] {truck.truck_id} Refueling... {truck.wait_time_ticks} ticks left")
+                return
+            else:
+                truck.fuel_percent = 100
+                truck.status = "EN_ROUTE"
+                truck.alerts = ["Refueling complete. Tank size: 100%"]
+                print(f"[SIM] {truck.truck_id} Refueling complete!")
+                # Don't return, allow movement in same tick if next node exists
+        
         if not truck.route_nodes or len(truck.route_nodes) < 2:
             truck.status = "IDLE"
             return
@@ -152,6 +166,14 @@ class Simulation:
                 truck.status = "ARRIVED"
                 truck.eta_minutes = 0
                 print(f"[SIM] {truck.truck_id} has ARRIVED at {truck.current_node}")
+            
+            # Refuel Check: If we reached a fuel station
+            if "FUEL" in truck.current_node:
+                truck.status = "REFUELING"
+                truck.wait_time_ticks = 5 # Wait for 5 ticks to refuel
+                truck.alerts = ["Refueling in progress..."]
+                print(f"[SIM] {truck.truck_id} started REFUELING at {truck.current_node}")
+
         else:
             # Interpolate
             ratio = speed / dist
@@ -159,10 +181,22 @@ class Simulation:
             new_lng = curr_lng + (t_lng - curr_lng) * ratio
             truck.location = Location(lat=new_lat, lng=new_lng)
         
+        # Fuel Consumption
+        # Consumption depends on speed and capacity used
+        consumption = 0.5 * (1 + truck.capacity_used_percent / 100.0)
+        truck.fuel_percent = max(0, truck.fuel_percent - consumption)
+        
+        if truck.fuel_percent < 20 and truck.status not in ["REROUTING", "REFUELING", "STOPPED_FOR_FUEL"]:
+            # Check if we already have an active fuel stop alert to avoid spam
+            if not any("Heading to fuel station" in a for a in truck.alerts):
+                print(f"[SIM] Low Fuel detected for {truck.truck_id} ({truck.fuel_percent:.1f}%)! Triggering AI...")
+                await self._trigger_random_event(truck, "LOW_FUEL")
+
         if truck.eta_minutes > 0:
             truck.eta_minutes -= 1
 
-        print(f"[SIM] {truck.truck_id} at ({truck.location.lat:.4f}, {truck.location.lng:.4f}) -> {truck.status}")
+        # More detailed print
+        print(f"[SIM] {truck.truck_id} status: {truck.status}, fuel: {truck.fuel_percent:.1f}%, pos: ({truck.location.lat:.4f}, {truck.location.lng:.4f})")
 
     async def trigger_event(self, truck_id: str, event_type: str = None):
         """Manually trigger an event for a specific truck."""
@@ -177,14 +211,24 @@ class Simulation:
             event_type = random.choice(["TRAFFIC_JAM", "NEW_LOAD_OFFER"])
         
         try:
-            decision = await agent_service.decide(truck, event_type)
+            decision, thoughts = await agent_service.decide(truck, event_type)
+            truck.thoughts = thoughts # Capture logical steps
+            
             if decision and decision.action == "REROUTE":
-               print(f"Rerouting {truck.truck_id}! Reasoning: {decision.reasoning}")
+               print(f"[DISPATCH] {truck.truck_id} Rerouting. Reasoning: {decision.reasoning}")
                
                from map_data import ROUTE_PATHS, ROUTES
                new_route_id = decision.impact.get("selected_route_id")
+               new_nodes = decision.impact.get("new_route_nodes")
                
-               if new_route_id and new_route_id in ROUTE_PATHS:
+               if new_nodes:
+                   # Agent provided direct node sequence (e.g., to include a fuel stop)
+                   truck.route_nodes = [truck.current_node] + new_nodes
+                   truck.status = "REROUTING"
+                   truck.active_route_id = "CUSTOM_AI_ROUTE"
+                   # Approximate ETA: 10 mins per node
+                   truck.eta_minutes = len(new_nodes) * 10
+               elif new_route_id and new_route_id in ROUTE_PATHS:
                    new_nodes = ROUTE_PATHS[new_route_id]
                    # Start new route from current position
                    truck.route_nodes = [truck.current_node] + new_nodes
@@ -194,18 +238,37 @@ class Simulation:
                    # Update ETA based on route data
                    if new_route_id in ROUTES:
                        truck.eta_minutes = ROUTES[new_route_id].base_time_min
-                   
-                   # Re-calculate coordinates
-                   truck.route_coordinates = self._resolve_route(truck.route_nodes)
-                   
-                   # Log the decision to state so frontend can see
-                   truck.alerts = [f"Rerouted: {decision.reasoning}"]
-                        
+               
+               # Re-calculate coordinates
+               truck.route_coordinates = self._resolve_route(truck.route_nodes)
+               
+               # Log the decision to state so frontend can see
+               truck.alerts = [f"Rerouted: {decision.reasoning}"]
+               
+               if event_type == "LOW_FUEL":
+                   truck.status = "REROUTING" # Let it move to the fuel station
+                   truck.alerts = ["Heading to fuel station..."]
+                         
             elif decision and decision.action == "CONTINUE":
-                pass
+                print(f"[DISPATCH] {truck.truck_id} holding course. Reasoning: {decision.reasoning}")
                 
+            # SAFETY OVERRIDE: If the AI returns CONTINUE but fuel is critically low, force a reroute
+            if event_type == "LOW_FUEL" and (not decision or decision.action != "REROUTE"):
+                print(f"[DISPATCH] {truck.truck_id} low fuel safety override triggered.")
+                from agent_service import agent_service
+                decision, thoughts = agent_service._heuristic_fallback(truck, "LOW_FUEL", "Safety override: Fuel critical.")
+                # Recursively apply this heuristic decision
+                new_nodes = decision.impact.get("new_route_nodes")
+                if new_nodes:
+                    truck.route_nodes = [truck.current_node] + new_nodes
+                    truck.status = "REROUTING"
+                    truck.active_route_id = "CUSTOM_AI_ROUTE"
+                    truck.route_coordinates = self._resolve_route(truck.route_nodes)
+                    truck.alerts = ["Heading to fuel station (Safety Override)"]
+                    truck.thoughts.append("Simulation: Overrode AI decision to ensure vehicle safety.")
+
         except Exception as e:
-            print(f"Agent failed in simulation loop: {e}")
+            print(f"[ERROR] Dispatch logic failed: {e}")
 
     def get_state(self):
         return {

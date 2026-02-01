@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>ROUTEXA | Simulation Configuration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121821;
+      --card: #151c27;
+      --accent: #2dd4bf;
+      --accent-glow: rgba(45, 212, 191, 0.45);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: rgba(255, 255, 255, 0.08);
+      --danger: #ef4444;
+      --success: #34d399;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Inter", system-ui, sans-serif;
+      transition: all 0.25s ease;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ================= HEADER ================= */
+    header {
+      background: linear-gradient(135deg, #020617, #0f172a);
+      padding: 28px 20px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 32px;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+
+    header h1 i {
+      margin-right: 10px;
+    }
+
+    header p {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* ================= CONTAINER ================= */
+    .container {
+      flex: 1;
+      padding: 40px 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h2 {
+      color: var(--accent);
+      font-size: 22px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    /* ================= ROUTES ================= */
+    #routeControl {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .route-card {
+      background: linear-gradient(180deg, #151c27, #0b1220);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .route-card.blocked {
+      border-left: 4px solid var(--danger);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .route-card.active {
+      border-left: 4px solid var(--success);
+    }
+
+    /* ================= TRUCK CARD ================= */
+    .truck-card {
+      background: linear-gradient(180deg, #151c27, #0b1220);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .truck-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+      border-color: var(--accent);
+    }
+
+    .truck-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .truck-values {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ================= BUTTONS ================= */
+    button {
+      cursor: pointer;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2dd4bf, #14b8a6);
+      color: #020617;
+      box-shadow: 0 4px 18px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 26px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-small {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+    }
+
+    /* ================= MODAL ================= */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: linear-gradient(180deg, #0f172a, #020617);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 28px;
+      max-width: 520px;
+      margin: 10% auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .close {
+      font-size: 26px;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    /* ================= STATUS ================= */
+    .status {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .status.success {
+      color: var(--success);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <h1></i>ROUTEXA</h1>
+    <p>Intelligent Route Orchestration & Autonomous Logistics Simulation</p>
+  </header>
+
+  <!-- MAIN -->
+  <div class="container">
+
+    <h2>
+      <span> Network Control</span>
+      <button class="btn-small btn-secondary" onclick="loadRoutes()">Refresh</button>
+    </h2>
+
+    <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px;">
+      Dynamically block/unblock routes to test AI rerouting decisions.
+    </p>
+
+    <div id="routeControl"></div>
+
+    <h2> Truck Configuration</h2>
+    <div id="configForm"></div>
+
+    <div style="text-align:center; margin-top: 40px;">
+      <button class="btn btn-primary" onclick="openUpdateModal()">Update Values</button>
+      <button class="btn btn-primary" onclick="startSimulation()">Start Simulation</button>
+      <button class="btn btn-secondary" onclick="window.location.href='/'">Back</button>
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
+
+  <!-- MODAL -->
+  <div id="updateModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="color: var(--accent);">Update Truck Values</h3>
+        <span class="close" onclick="closeModal()">&times;</span>
+      </div>
+      <div id="modalBody"></div>
+      <div style="text-align:right; margin-top:20px;">
+        <button class="btn btn-primary" onclick="saveAndUpdate()">Save</button>
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    ROUTEXA © 2026 • AI-Driven Smart Logistics Platform
+  </footer>
+
+  <!-- ================= SCRIPT (UNCHANGED BACKEND) ================= -->
+  <script>
+    let config = {};
+
+    async function loadConfig() {
+      const res = await fetch('/api/config');
+      config = await res.json();
+      renderConfig();
+      loadRoutes();
+    }
+
+    async function loadRoutes() {
+      const res = await fetch('/api/routes');
+      const routes = await res.json();
+      renderRoutes(routes);
+    }
+
+    function renderRoutes(routes) {
+      const container = document.getElementById('routeControl');
+      container.innerHTML = '';
+
+      routes.forEach(r => {
+        const card = document.createElement('div');
+        card.className = `route-card ${r.is_active ? 'active' : 'blocked'}`;
+        card.innerHTML = `
+          <div>
+            <strong>${r.route_id}</strong>
+            <div style="font-size:12px;color:var(--muted);">${r.origin} → ${r.destination}</div>
+          </div>
+          <button class="btn-small" style="background:${r.is_active ? '#ef4444' : '#34d399'};color:#fff"
+            onclick="toggleRoute('${r.route_id}')">
+            ${r.is_active ? 'Block' : 'Unblock'}
+          </button>`;
+        container.appendChild(card);
+      });
+    }
+
+    async function toggleRoute(id) {
+      console.log(`Toggling route: ${id}`);
+      await fetch(`/api/routes/${id}/toggle`, { method: 'POST' });
+      loadRoutes();
+    }
+
+    function renderConfig() {
+      const container = document.getElementById('configForm');
+      container.innerHTML = '';
+      Object.keys(config).forEach(id => {
+        const t = config[id];
+        container.innerHTML += `
+          <div class="truck-card">
+            <div>
+              <div class="truck-title">Truck ${id}</div>
+              <div class="truck-values">Fuel: ${t.fuel_percent}% | Load: ${t.capacity_used_percent}%</div>
+            </div>
+            <button class="btn-small btn-primary" onclick="openUpdateModal()">Edit</button>
+          </div>`;
+      });
+    }
+
+    function openUpdateModal() {
+      const modal = document.getElementById('updateModal');
+      const body = document.getElementById('modalBody');
+      body.innerHTML = '';
+
+      Object.keys(config).forEach(id => {
+        const t = config[id];
+        body.innerHTML += `
+          <div style="margin-bottom:16px;">
+            <strong>Truck ${id}</strong>
+            <input type="number" id="fuel-${id}" value="${t.fuel_percent}" min="0" max="100">
+            <input type="number" id="cap-${id}" value="${t.capacity_used_percent}" min="0" max="100">
+          </div>`;
+      });
+
+      modal.style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('updateModal').style.display = 'none';
+    }
+
+    async function saveAndUpdate() {
+      Object.keys(config).forEach(id => {
+        config[id].fuel_percent = +document.getElementById(`fuel-${id}`).value;
+        config[id].capacity_used_percent = +document.getElementById(`cap-${id}`).value;
+      });
+      await fetch('/api/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+      closeModal();
+      renderConfig();
+    }
+
+    async function startSimulation() {
+      await fetch('/api/start', { method: 'POST' });
+      showStatus('Simulation started!', 'success');
+      setTimeout(() => location.href = '/manager', 2000);
+    }
+
+    function showStatus(msg, type) {
+      const s = document.getElementById('status');
+      s.textContent = msg;
+      s.className = `status ${type}`;
+    }
+
+    loadConfig();
+  </script>
+
+</body>
+
+</html>
