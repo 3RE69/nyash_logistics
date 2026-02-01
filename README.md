@@ -1,4 +1,4 @@
-# 🚚 Adaptive Logistics Agent
+# Adaptive Logistics Agent
 
 **Continuous, agent-driven optimization for road freight operations**
 
@@ -8,7 +8,7 @@ Traditional road logistics is planned as isolated trips. Once a truck starts mov
 
 ---
 
-## 🧠 Core Idea
+## Core Idea
 
 Each truck operates as an **AI agent** that:
 - Continuously observes its state (location, fuel, capacity, ETA)
@@ -20,7 +20,7 @@ Agents run independently but share a **global world model**, enabling fleet-leve
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - Agentic decision loop (observe → reason → act)
 - Real-time adaptation during a trip
@@ -31,7 +31,7 @@ Agents run independently but share a **global world model**, enabling fleet-leve
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 ┌────────────┐      ┌──────────────┐
@@ -55,7 +55,7 @@ Agents run independently but share a **global world model**, enabling fleet-leve
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 adaptive-logistics-agent/
@@ -76,7 +76,7 @@ adaptive-logistics-agent/
 
 ---
 
-## ⚙️ Tech Stack
+## Tech Stack
 
 ### Backend
 - Python
@@ -91,7 +91,7 @@ adaptive-logistics-agent/
 
 ---
 
-## 🚀 Getting Started
+## How To Run
 
 ### Backend
 
@@ -114,3 +114,4 @@ npm run dev
 ## 🏁 Summary
 
 Adaptive Logistics Agent demonstrates how AI agents can transform road freight from static planning into a continuous, adaptive system.
+
